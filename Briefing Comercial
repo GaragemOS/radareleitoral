@@ -1,0 +1,37 @@
+# Radar Eleitoral - Briefing Comercial
+
+## O que é o projeto?
+O **Radar Eleitoral** é uma plataforma inovadora e interativa de inteligência de dados voltada para o cenário político. Ele funciona como um "mapa de calor" dinâmico e uma central de análises detalhadas do desempenho de candidatos em eleições passadas (atualmente focado no estado da Bahia, com dados de 2018 e 2022). 
+
+A ferramenta transforma dados complexos do TSE em visualizações em mapa e relatórios gerenciais fáceis de compreender.
+
+## Qual o objetivo principal?
+O objetivo do sistema é fornecer inteligência estratégica para campanhas políticas, partidos e consultorias. O Radar Eleitoral permite que os tomadores de decisão visualizem instantaneamente **onde** um candidato tem força, **onde** perdeu espaço, e **quais regiões** apresentam maior potencial de crescimento ou "herança" de votos.
+
+Ele entrega segurança na tomada de decisão gerando economia de tempo humano e de recursos de campanha.
+
+## Funcionalidades (O que ele faz?)
+
+O sistema está **100% funcional**, conectado a uma base de dados real (não há dados simulados/mockados). Suas principais ferramentas são:
+
+1. **Mapa de Calor (Heatmap) Interativo:**
+   - Permite visualizar a distribuição geográfica dos votos de um candidato. 
+   - Ao passar o mouse ou clicar em diferentes municípios do mapa, o usuário entende onde a concentração de eleitores é mais forte.
+
+2. **Raio-X aprofundado por Município:**
+   - Ao selecionar uma cidade no mapa, uma barra lateral exibe dados vitais: total de votos, a porcentagem do eleitorado alcançada, sua posição no ranking local de candidatos, e até mesmo dados mastigados por Zona e Seção eleitoral.
+
+3. **Análise de Herança Eleitoral:**
+   - Possibilita cruzar os dados de um candidato atual com um "candidato de referência" do passado. A plataforma desenha o mapa mostrando onde a base de eleitores do candidato A migrou com sucesso (ou onde falhou) para o candidato B.
+
+4. **Comparação Direta:**
+   - É possível comparar o desempenho de um mesmo candidato em eleições diferentes (ex: 2018 vs 2022) ou colocar dois candidatos lado a lado para disputar território no mesmo ano.
+
+5. **Exportação de Dados (Geração de Relatórios):**
+   - O usuário corporativo tem a opção de fazer o download em planilhas (CSV) da visão consolidada ou segmentada (por cidade/zona/seção), facilitando o uso dos dados em reuniões do time de campanha.
+
+6. **"AI Insights" em Tempo Real:**
+   - Baseado no desempenho numérico, a plataforma emite pílulas de insights automáticas e rápidas como *"Zona de crescimento. Intensificar campanha."* ou *"Perda de território. Investigar causas"*, orientando a equipe de marketing ou coordenação política sobre os próximos passos.
+
+## Resumo para Argumento de Venda (Pitch)
+*"O Radar Eleitoral é a ferramenta definitiva para estrategistas políticos mapearem territórios, entenderem o histórico de votos até o nível de seção eleitoral e direcionarem campanhas com precisão cirúrgica. Com ele, a campanha vai exatamente onde o voto está, embasada por dados reais cruzados a favor da vitória."*

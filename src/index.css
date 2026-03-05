@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Syne", sans-serif;
+  --font-mono: "DM Mono", monospace;
+  --font-body: "Inter", sans-serif;
+
+  --color-bg: #08101e;
+  --color-surface: #0d1a2d;
+  --color-surface2: #12243a;
+  --color-border: #1e3450;
+  --color-text: #e8edf5;
+  --color-muted: #6b8aaa;
+  --color-accent: #f0a500;
+  --color-green: #22c87a;
+  --color-red: #e8394a;
+  --color-blue: #3a8ef0;
+}
+
+body {
+  @apply bg-bg text-text font-body antialiased;
+  margin: 0;
+  overflow: hidden;
+}
+
+#root {
+  @apply h-screen w-screen relative flex flex-col;
+}
