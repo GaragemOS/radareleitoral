@@ -1,2 +1,6 @@
 panda
 sidrapy
+fastapi
+uvicorn
+duckdb
+python-dotenv
