@@ -92,7 +92,7 @@ function useCandidatoData(candidate, ano) {
     useEffect(() => {
         if (!candidate || !ano) { setData(null); return; }
         setLoading(true); setError(null); setData(null);
-        fetch(`${API_URL}/candidato/completo?ano=${ano}&numero=${candidate.numero}&cargo=${encodeURIComponent(candidate.cargo)}`)
+        fetch(`https://readareleitoral-api.up.railway.app/candidato/completo?ano=${ano}&numero=${candidate.numero}&cargo=${encodeURIComponent(candidate.cargo)}`)
             .then(r => { if (!r.ok) throw new Error(`Erro ${r.status}`); return r.json(); })
             .then(d => { setData(d); setLoading(false); })
             .catch(e => { setError(e.message); setLoading(false); });
@@ -261,7 +261,7 @@ function CandidateSearchDropdown({ ano, onSelect, onClose }) {
         timeout.current = setTimeout(async () => {
             setLoading(true);
             try {
-                const res = await fetch(`${API_URL}/candidatos/busca?ano=${ano}&nome=${encodeURIComponent(val)}`);
+                const res = await fetch(`https://readareleitoral-api.up.railway.app/candidatos/busca?ano=${ano}&nome=${encodeURIComponent(val)}`);
                 const data = await res.json();
                 setResults(data);
             } catch { }

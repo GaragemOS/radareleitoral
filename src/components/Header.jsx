@@ -64,7 +64,7 @@ export default function Header() {
             setSearchLoading(true);
             try {
                 const res = await fetch(
-                    `${API_URL}/candidatos/busca?ano=${ano}&nome=${encodeURIComponent(val)}`
+                    `https://readareleitoral-api.up.railway.app/candidatos/busca?ano=${ano}&nome=${encodeURIComponent(val)}`
                 );
                 const data = await res.json();
                 setSearchResults(data);

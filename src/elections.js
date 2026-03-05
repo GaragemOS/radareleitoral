@@ -1,9 +1,9 @@
-export const API_URL = import.meta.env.API_URL || "http://localhost:8000";
+export const API_URL = import.meta.env.API_URL || "https://readareleitoral-api.up.railway.app";
 
 export const fetchCandidateByNumber = async (numero, cargo, ano = 2022) => {
   try {
     const res = await fetch(
-      `${API_URL}/candidato?numero=${numero}&cargo=${encodeURIComponent(cargo)}&ano=${ano}`
+      `https://readareleitoral-api.up.railway.app/candidato?numero=${numero}&cargo=${encodeURIComponent(cargo)}&ano=${ano}`
     );
     if (!res.ok) {
       const errorData = await res.json();
@@ -19,7 +19,7 @@ export const fetchCandidateByNumber = async (numero, cargo, ano = 2022) => {
 export const fetchCandidatesList = async (cargo, ano = 2022) => {
   try {
     const res = await fetch(
-      `${API_URL}/candidatos/lista?cargo=${encodeURIComponent(cargo)}&ano=${ano}`
+      `https://readareleitoral-api.up.railway.app/candidatos/lista?cargo=${encodeURIComponent(cargo)}&ano=${ano}`
     );
     if (!res.ok) throw new Error("Erro ao listar candidatos");
     return await res.json();
