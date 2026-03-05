@@ -12,6 +12,7 @@ const ANOS_DISPONIVEIS = [2018, 2022];
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n) => Number(n ?? 0).toLocaleString('pt-BR');
 
+
 function Delta({ a, b }) {
     if (a == null || b == null || b === 0) return null;
     const diff = a - b;
@@ -100,10 +101,24 @@ function useCandidatoData(candidate, ano) {
 
     return { data, loading, error };
 }
+function useEleicaoTotais(ano, cargo) {
+    const [totais, setTotais] = useState(null);
+
+    useEffect(() => {
+        if (!ano || !cargo) return;
+        fetch(`https://readareleitoral-api.up.railway.app/eleicao/totais?ano=${ano}&cargo=${encodeURIComponent(cargo)}&uf=BA`)
+            .then(r => r.ok ? r.json() : null)
+            .then(setTotais)
+            .catch(() => { });
+    }, [ano, cargo]);
+
+    return totais;
+}
+
 
 // ─── Painel de dados ──────────────────────────────────────────────────────────
 function DataPanel({ data, loading, error, ano, activeTab,
-    municipioFiltro, zonaFiltro, secaoFiltro, compareData }) {
+    municipioFiltro, zonaFiltro, secaoFiltro, compareData, eleicaoTotais, compareEleicaoTotais }) {
 
     if (loading) return (
         <div className="flex flex-col items-center justify-center h-64 gap-3">
@@ -142,12 +157,15 @@ function DataPanel({ data, loading, error, ano, activeTab,
                     <div className="grid grid-cols-2 gap-2">
                         <StatPill label="Votos" value={fmt(data.totais.votos)}
                             valueB={compareData ? fmt(compareData.totais?.votos) : undefined} accent />
-                        <StatPill label="Comparecimento" value={fmt(data.totais.comparecimento)}
-                            valueB={compareData ? fmt(compareData.totais?.comparecimento) : undefined} />
-                        <StatPill label="Aptos" value={fmt(data.totais.aptos)}
-                            valueB={compareData ? fmt(compareData.totais?.aptos) : undefined} />
-                        <StatPill label="Abstenções" value={fmt(data.totais.abstencoes)}
-                            valueB={compareData ? fmt(compareData.totais?.abstencoes) : undefined} />
+                        <StatPill label="Comparecimento"
+                            value={fmt(eleicaoTotais?.comparecimento ?? data.totais.comparecimento)}
+                            valueB={compareData ? fmt(compareEleicaoTotais?.comparecimento ?? compareData.totais?.comparecimento) : undefined} />
+                        <StatPill label="Aptos"
+                            value={fmt(eleicaoTotais?.aptos ?? data.totais.aptos)}
+                            valueB={compareData ? fmt(compareEleicaoTotais?.aptos ?? compareData.totais?.aptos) : undefined} />
+                        <StatPill label="Abstenções"
+                            value={fmt(eleicaoTotais?.abstencoes ?? data.totais.abstencoes)}
+                            valueB={compareData ? fmt(compareEleicaoTotais?.abstencoes ?? compareData.totais?.abstencoes) : undefined} />
                     </div>
                     <TableSection title="Candidato" icon={FileText}>
                         <DataRow label="Nome" valueA={data.candidato.nome} />
@@ -338,7 +356,8 @@ export default function ExportModal({ candidate, onClose }) {
 
     const { data, loading, error } = useCandidatoData(candidate, anoAtual);
     const { data: dataB, loading: loadingB, error: errorB } = useCandidatoData(panelBCandidate, panelBAno);
-
+    const eleicaoTotais = useEleicaoTotais(anoAtual, data?.candidato?.cargo, data?.candidato?.uf);
+    const eleicaoTotaisB = useEleicaoTotais(panelBAno, dataB?.candidato?.cargo, dataB?.candidato?.uf);
     const anosCompare = ANOS_DISPONIVEIS.filter(a => a !== anoAtual);
 
     const municipioOptions = data
@@ -589,10 +608,21 @@ export default function ExportModal({ candidate, onClose }) {
                                 </span>
                             </div>
                         )}
+                        {/* Painel A */}
                         <DataPanel data={data} loading={loading} error={error} ano={anoAtual}
                             activeTab={activeTab} municipioFiltro={municipioFiltro}
                             zonaFiltro={zonaFiltro} secaoFiltro={secaoFiltro}
-                            compareData={dataB} />
+                            compareData={dataB}
+                            eleicaoTotais={eleicaoTotais}
+                            compareEleicaoTotais={eleicaoTotaisB}
+                        />
+
+                        {/* Painel B */}
+                        <DataPanel data={dataB} loading={loadingB} error={errorB} ano={panelBAno}
+                            activeTab={activeTab} municipioFiltro={municipioFiltro}
+                            zonaFiltro={zonaFiltro} secaoFiltro={secaoFiltro}
+                            eleicaoTotais={eleicaoTotaisB}
+                        />
                     </div>
 
                     {/* Painel B */}
