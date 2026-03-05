@@ -33,25 +33,6 @@ export default function Header() {
     const [anoDropdownOpen, setAnoDropdownOpen] = useState(false);
     const [confirmAno, setConfirmAno] = useState(null); // ano pendente de confirmação
 
-
-    // const handleSearch = async () => {
-    //     setSearchError("");
-    //     const numero = parseInt(searchNumero);
-    //     if (isNaN(numero)) {
-    //         setSearchError("Informe um número válido");
-    //         return;
-    //     }
-
-    //     try {
-    //         await loadCandidateByNumber(numero, searchCargo);
-    //         setDropdownOpen(false);
-    //         setSearchNumero("");
-    //     } catch (e) {
-    //         setSearchError("Candidato não encontrado");
-    //     }
-    // };
-    // Remover o state searchCargo e o <select>
-
     const handleSearchInput = (e) => {
         const val = e.target.value;
         setSearchNome(val);

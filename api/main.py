@@ -182,6 +182,43 @@ def votos_por_secao(ano: int, numero: int, cargo: str, municipio: str):
     return {"municipio": municipio, "numero": numero, "cargo": cargo, "secoes": secoes}
 
 
+
+@app.get("/eleicao/totais")
+def eleicao_totais(ano: int, cargo: str, uf: str):
+    f = get_parquet(ano)
+    cargo_upper = cargo.strip().upper()
+    uf_upper = uf.strip().upper()
+    
+    totais = run_one(f"""
+        SELECT SUM(total_aptos)           as total_aptos,
+               SUM(total_comparecimento)  as total_comparecimento,
+               SUM(total_abstencoes)      as total_abstencoes,
+               SUM(total_biometria_nh)    as total_biometria_nh,
+               COUNT(*)                  as total_secoes
+        FROM (
+            SELECT NM_MUNICIPIO, NR_ZONA, NR_SECAO,
+                   MAX(QT_APTOS)                  as total_aptos,
+                   MAX(QT_COMPARECIMENTO)         as total_comparecimento,
+                   MAX(QT_ABSTENCOES)             as total_abstencoes,
+                   MAX(QT_ELEITORES_BIOMETRIA_NH) as total_biometria_nh
+            FROM read_parquet('{f}')
+            WHERE UPPER(SG_UF) = '{uf_upper}' AND UPPER(DS_CARGO_PERGUNTA) = '{cargo_upper}'
+            GROUP BY NM_MUNICIPIO, NR_ZONA, NR_SECAO
+        )
+    """)
+
+    if not totais or totais["total_secoes"] == 0:
+        raise HTTPException(status_code=404, detail="Nenhum dado encontrado")
+
+    return {
+        "aptos": totais["total_aptos"] or 0,
+        "comparecimento": totais["total_comparecimento"] or 0,
+        "abstencoes": totais["total_abstencoes"] or 0,
+        "biometria_nh": totais["total_biometria_nh"] or 0,
+        "secoes": totais["total_secoes"] or 0,
+    }
+
+    
 @app.get("/candidato/completo")
 def candidato_completo(ano: int, numero: int, cargo: str, uf: Optional[str] = None):
     f = get_parquet(ano)
