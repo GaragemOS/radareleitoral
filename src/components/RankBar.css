@@ -1,0 +1,67 @@
+.rankbar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rankbar-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.rankbar-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.rankbar-item-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rankbar-pos {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--texto-muted);
+    width: 22px;
+}
+
+.rankbar-item.active .rankbar-pos {
+    color: var(--cor-secundaria);
+}
+
+.rankbar-name {
+    font-size: 13px;
+    color: var(--texto-muted);
+}
+
+.rankbar-item.active .rankbar-name {
+    color: var(--texto-cor);
+    font-weight: 600;
+}
+
+.rankbar-votes {
+    font-size: 12px;
+    color: var(--texto-muted);
+}
+
+.rankbar-item.active .rankbar-votes {
+    color: var(--texto-cor);
+}
+
+.rankbar-bar-bg {
+    height: 5px;
+    width: 100%;
+    background: var(--input-bg);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.rankbar-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}

@@ -1,54 +1,25 @@
-import { useEffect } from 'react';
 import { useStore } from './store';
-
 import Header from './components/Header';
-import HeritagePanel from './components/HeritagePanel';
 import MapView from './components/MapView';
 import Sidebar from './components/Sidebar';
 import Toast from './components/Toast';
 import ExportModal from './components/ExportModal';
+import SecoesModal from './components/SecoesModal';
 
-function App() {
-  const exportOpen = useStore((state) => state.exportOpen);
-  const closeExport = useStore((state) => state.closeExport);
-  const candidates = useStore((state) => state.candidates);
-  const candidateIndex = useStore((state) => state.candidateIndex);
-  const activeCandidate = candidates[candidateIndex];
-  // const fetchCandidates = useStore(state => state.fetchCandidates);
-  // const isLoading = useStore(state => state.isLoading);
-
-  // useEffect(() => {
-  //   fetchCandidates();
-  // }, [fetchCandidates]);
-
-  // if (isLoading) {
-  //   return (
-  //     <div className="h-screen w-screen relative flex items-center justify-center bg-bg font-body text-text">
-  //       <div className="flex flex-col items-center gap-4">
-  //         <div className="w-8 h-8 rounded-full border-4 border-accent border-t-transparent animate-spin" />
-  //         <p className="font-mono text-sm text-muted animate-pulse">Carregando dados eleitorais...</p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+export default function App() {
+  const exportOpen = useStore(s => s.exportOpen);
+  const secoesModalOpen = useStore(s => s.secoesModalOpen);
 
   return (
     <>
-      {exportOpen && activeCandidate && (
-        <ExportModal
-          candidate={activeCandidate}
-          onClose={closeExport}
-        />
-      )}
-      <div className="h-screen w-screen relative flex flex-col bg-bg overflow-hidden font-body text-text">
-        <Header />
-        <HeritagePanel />
+      <Header />
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
         <MapView />
         <Sidebar />
-        <Toast />
       </div>
+      <Toast />
+      {exportOpen && <ExportModal />}
+      {secoesModalOpen && <SecoesModal />}
     </>
   );
 }
-
-export default App;

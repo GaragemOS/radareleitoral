@@ -1,28 +1,109 @@
-@import "tailwindcss";
+/* === Design Tokens — Radar Eleitoral (Campanha Inteligente identity) === */
+:root {
+  --cor-primaria: #ffffff;
+  --cor-secundaria: #285058;
+  --accent: #99EBEB;
+  --bg-page: #F4F4F4;
+  --bg-card: #ffffff;
+  --bg-card-alt: #F0FFFF;
+  --input-bg: #F0F0F0;
+  --input-border: #99EBEB;
+  --texto-cor: #1a1a1a;
+  --texto-secundario: #474646;
+  --texto-muted: #888888;
+  --placeholder: rgba(102, 102, 102, 0.6);
+  --border: #e2e8f0;
+  --border-light: #f0f0f0;
 
-@theme {
-  --font-display: "Syne", sans-serif;
-  --font-mono: "DM Mono", monospace;
-  --font-body: "Inter", sans-serif;
+  /* Candidate colors */
+  --cor-candidato-1: #285058;
+  --cor-candidato-2: #e8394a;
+  --cor-candidato-3: #f59e0b;
+  --cor-candidato-4: #8b5cf6;
+  --cor-candidato-5: #06b6d4;
 
-  --color-bg: #08101e;
-  --color-surface: #0d1a2d;
-  --color-surface2: #12243a;
-  --color-border: #1e3450;
-  --color-text: #e8edf5;
-  --color-muted: #6b8aaa;
-  --color-accent: #f0a500;
-  --color-green: #22c87a;
-  --color-red: #e8394a;
-  --color-blue: #3a8ef0;
+  /* Map heatmap scale */
+  --map-empty: #e8f5f3;
+  --map-low: #b2dfdb;
+  --map-mid: #4db6ac;
+  --map-high: #00897b;
+  --map-max: #004d40;
+
+  /* Status colors */
+  --green: #22c55e;
+  --red: #ef4444;
+  --blue: #3b82f6;
+
+  /* Shadows & Radii */
+  --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --card-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --radius-card: 16px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition: 0.2s ease;
+  --transition-slow: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* === Reset === */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-  @apply bg-bg text-text font-body antialiased;
-  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--bg-page);
+  color: var(--texto-cor);
+  min-height: 100vh;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
-  @apply h-screen w-screen relative flex flex-col;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+input, select {
+  font-family: inherit;
+  border: none;
+  outline: none;
+  background: none;
+}
+
+/* === Scrollbar === */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--texto-muted);
 }

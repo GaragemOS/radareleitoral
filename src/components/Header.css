@@ -1,0 +1,291 @@
+/* === Header === */
+.header {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    background: var(--cor-primaria);
+    border-bottom: 1px solid var(--border);
+    z-index: 1000;
+    gap: 16px;
+}
+
+/* ── Left ── */
+.header-left {
+    flex-shrink: 0;
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-logo-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--cor-secundaria), var(--accent));
+}
+
+.header-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--cor-secundaria);
+    line-height: 1.2;
+}
+
+.header-subtitle {
+    font-size: 10px;
+    color: var(--texto-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ── Center (Search) ── */
+.header-center {
+    flex: 1;
+    max-width: 460px;
+    position: relative;
+}
+
+.header-search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.header-search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--texto-muted);
+    pointer-events: none;
+}
+
+.header-search-input {
+    width: 100%;
+    padding: 8px 36px 8px 36px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    color: var(--texto-cor);
+    transition: border-color var(--transition);
+}
+
+.header-search-input::placeholder {
+    color: var(--placeholder);
+}
+
+.header-search-input:focus {
+    border-color: var(--accent);
+    background: #fff;
+}
+
+.header-search-clear {
+    position: absolute;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--texto-muted);
+    transition: background var(--transition);
+}
+
+.header-search-clear:hover {
+    background: var(--texto-muted);
+    color: #fff;
+}
+
+.header-search-spinner {
+    position: absolute;
+    right: 10px;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--cor-secundaria);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Dropdown */
+.header-search-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--card-shadow-lg);
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 1001;
+}
+
+.header-search-result {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-light);
+    transition: background var(--transition);
+    text-align: left;
+}
+
+.header-search-result:last-child {
+    border-bottom: none;
+}
+
+.header-search-result:hover {
+    background: var(--bg-card-alt);
+}
+
+.header-search-result-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.header-search-result-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--texto-cor);
+}
+
+.header-search-result-meta {
+    font-size: 11px;
+    color: var(--texto-muted);
+}
+
+.header-search-result-votes {
+    font-size: 11px;
+    color: var(--cor-secundaria);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* ── Right ── */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+/* Herança Eleitoral */
+.header-heranca-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--texto-muted);
+    font-size: 11px;
+    font-weight: 500;
+    transition: all var(--transition);
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.header-heranca-btn:hover {
+    border-color: var(--accent);
+    opacity: 1;
+}
+
+.header-year-tab:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.header-year-tabs {
+    display: flex;
+    background: var(--input-bg);
+    border-radius: var(--radius-full);
+    padding: 3px;
+}
+
+.header-year-tab {
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    color: var(--texto-muted);
+    transition: all var(--transition);
+}
+
+.header-year-tab.active {
+    background: var(--cor-secundaria);
+    color: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Favorites */
+.header-favorites {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.header-fav-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--texto-secundario);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.header-fav-chip.active {
+    background: var(--bg-card-alt);
+    border-color: var(--accent);
+    color: var(--cor-secundaria);
+}
+
+.header-fav-chip:hover {
+    border-color: var(--accent);
+}
+
+.header-fav-name {
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.header-fav-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    color: var(--texto-muted);
+    transition: all var(--transition);
+}
+
+.header-fav-close:hover {
+    background: var(--red);
+    color: #fff;
+}

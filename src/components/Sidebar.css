@@ -1,0 +1,433 @@
+/* === Sidebar === */
+.sidebar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 360px;
+    height: calc(100vh - 64px);
+    background: var(--cor-primaria);
+    border-left: 1px solid var(--border);
+    z-index: 600;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.06);
+}
+
+.sidebar-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--texto-muted);
+    font-size: 13px;
+}
+
+.sidebar-no-data {
+    background: var(--bg-page);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--texto-muted);
+    text-align: center;
+    border: 1px dashed var(--border);
+}
+
+/* Header */
+.sidebar-header {
+    display: flex;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.sidebar-header-color {
+    width: 4px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.sidebar-candidate-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--cor-secundaria);
+    margin-bottom: 4px;
+}
+
+.sidebar-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.sidebar-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--texto-muted);
+}
+
+/* Stats */
+.sidebar-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.sidebar-stat-card {
+    background: var(--bg-page);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sidebar-stat-card.accent {
+    background: var(--bg-card-alt);
+    border: 1px solid var(--accent);
+}
+
+.sidebar-stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--texto-muted);
+    font-weight: 500;
+}
+
+.sidebar-stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--texto-cor);
+}
+
+.sidebar-stat-rank {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--cor-secundaria);
+}
+
+.sidebar-stat-rank .sidebar-stat-value {
+    color: var(--cor-secundaria);
+}
+
+.sidebar-stat-sub {
+    font-size: 10px;
+    color: var(--texto-muted);
+}
+
+/* Section */
+.sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sidebar-section-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--texto-secundario);
+}
+
+/* Loading */
+.sidebar-loading {
+    font-size: 12px;
+    color: var(--texto-muted);
+    padding: 8px 0;
+}
+
+/* Ranking list */
+.sidebar-ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sidebar-ranking-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--radius-xs);
+    transition: background var(--transition);
+    border-left: 3px solid transparent;
+}
+
+.sidebar-ranking-item.active {
+    background: var(--bg-card-alt);
+}
+
+.sidebar-ranking-item:not(.active) {
+    background: var(--bg-page);
+}
+
+.sidebar-ranking-pos {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--texto-muted);
+    width: 28px;
+    flex-shrink: 0;
+}
+
+.sidebar-ranking-item.active .sidebar-ranking-pos {
+    color: var(--cor-secundaria);
+}
+
+.sidebar-ranking-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.sidebar-ranking-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--texto-cor);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-ranking-partido {
+    font-size: 10px;
+    color: var(--texto-muted);
+}
+
+.sidebar-ranking-votes {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cor-secundaria);
+    white-space: nowrap;
+}
+
+/* Compare chips */
+.sidebar-compare-chips {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sidebar-compare-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-page);
+    border: 1px solid var(--border);
+}
+
+.sidebar-compare-chip-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.sidebar-compare-chip-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--texto-cor);
+}
+
+.sidebar-compare-chip-meta {
+    font-size: 11px;
+    color: var(--texto-muted);
+    flex: 1;
+}
+
+.sidebar-compare-chip-x {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--texto-muted);
+    flex-shrink: 0;
+    transition: all var(--transition);
+}
+
+.sidebar-compare-chip-x:hover {
+    background: var(--red);
+    color: #fff;
+}
+
+/* Compare search */
+.sidebar-compare-search-wrapper {
+    position: relative;
+}
+
+.sidebar-compare-input {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--texto-cor);
+    transition: border-color var(--transition);
+}
+
+.sidebar-compare-input:focus {
+    border-color: var(--accent);
+    background: #fff;
+}
+
+.sidebar-compare-input::placeholder {
+    color: var(--placeholder);
+}
+
+.sidebar-compare-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--card-shadow-lg);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10;
+}
+
+.sidebar-compare-result {
+    width: 100%;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-bottom: 1px solid var(--border-light);
+    text-align: left;
+    transition: background var(--transition);
+}
+
+.sidebar-compare-result:hover {
+    background: var(--bg-card-alt);
+}
+
+.sidebar-compare-result-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--texto-cor);
+}
+
+.sidebar-compare-result-meta {
+    font-size: 10px;
+    color: var(--texto-muted);
+}
+
+.sidebar-compare-result.from-history {
+    background: var(--bg-card-alt);
+}
+
+/* Compare history */
+.sidebar-history {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sidebar-history-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--texto-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sidebar-history-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.sidebar-history-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    background: var(--bg-page);
+    border: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--texto-secundario);
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.sidebar-history-item:hover {
+    border-color: var(--accent);
+    background: var(--bg-card-alt);
+}
+
+.sidebar-history-partido {
+    font-size: 10px;
+    color: var(--texto-muted);
+}
+
+/* Seções button */
+.sidebar-secoes-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--texto-secundario);
+    transition: all var(--transition);
+}
+
+.sidebar-secoes-btn:hover {
+    border-color: var(--accent);
+    background: var(--bg-card-alt);
+}
+
+/* Export */
+.sidebar-export-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 12px;
+    background: var(--cor-secundaria);
+    color: #fff;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    transition: background var(--transition);
+    margin-top: auto;
+}
+
+.sidebar-export-btn:hover {
+    background: #1d3d44;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        max-width: 360px;
+    }
+}

@@ -1,352 +1,398 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
-import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import { useStore } from '../store';
+import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
+import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
+import { scaleLinear } from 'd3-scale';
+import { geoIdentity, geoPath } from 'd3-geo';
+import { useStore, CANDIDATE_COLORS } from '../store';
+import './MapView.css';
 
-const GEOJSON_URL = "https://raw.githubusercontent.com/tbrugz/geodata-br/master/geojson/geojs-29-mun.json";
+const TOPO_URL = 'https://gist.githubusercontent.com/ruliana/1ccaaab05ea113b0dff3b22be3b4d637/raw/br-states.json';
+const IBGE_MUNI_BASE = 'https://servicodados.ibge.gov.br/api/v3/malhas/estados';
 
-// Paleta de cores para candidatos no modo compare
-const CANDIDATE_COLORS = [
-    '#3b82f6', // azul
-    '#ef4444', // vermelho
-    '#a855f7', // roxo
-    '#f97316', // laranja
-    '#06b6d4', // ciano
-    '#ec4899', // rosa
-    '#84cc16', // verde-limão
-    '#f59e0b', // âmbar
-];
+const UF_NAMES = {
+    AC: 'Acre', AL: 'Alagoas', AP: 'Amapá', AM: 'Amazonas', BA: 'Bahia',
+    CE: 'Ceará', DF: 'Distrito Federal', ES: 'Espírito Santo', GO: 'Goiás',
+    MA: 'Maranhão', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul',
+    MG: 'Minas Gerais', PA: 'Pará', PB: 'Paraíba', PR: 'Paraná',
+    PE: 'Pernambuco', PI: 'Piauí', RJ: 'Rio de Janeiro',
+    RN: 'Rio Grande do Norte', RS: 'Rio Grande do Sul', RO: 'Rondônia',
+    RR: 'Roraima', SC: 'Santa Catarina', SP: 'São Paulo', SE: 'Sergipe', TO: 'Tocantins'
+};
 
+const UF_IBGE_CODE = {
+    AC: 12, AL: 27, AP: 16, AM: 13, BA: 29, CE: 23, DF: 53, ES: 32,
+    GO: 52, MA: 21, MT: 51, MS: 50, MG: 31, PA: 15, PB: 25, PR: 41,
+    PE: 26, PI: 22, RJ: 33, RN: 24, RS: 43, RO: 11, RR: 14, SC: 42,
+    SP: 35, SE: 28, TO: 17
+};
 
+function MapView() {
+    const favorites = useStore(s => s.favorites);
+    const activeFavoriteIndex = useStore(s => s.activeFavoriteIndex);
+    const municipalData = useStore(s => s.municipalData);
+    const selectedUf = useStore(s => s.selectedUf);
+    const compareCandidates = useStore(s => s.compareCandidates);
+    const compareData = useStore(s => s.compareData);
+    const selectUf = useStore(s => s.selectUf);
+    const clearUf = useStore(s => s.clearUf);
+    const selectMunicipality = useStore(s => s.selectMunicipality);
+    const openExport = useStore(s => s.openExport);
 
+    const [tooltip, setTooltip] = useState({ show: false, content: '', x: 0, y: 0 });
+    const [muniFeatures, setMuniFeatures] = useState(null);
+    const [loadingMuni, setLoadingMuni] = useState(false);
+    const [hoveredGeo, setHoveredGeo] = useState(null);
 
-function getHeatmapColor(ratio) {
-    // Degraus abruptos — sem suavização
-    if (ratio > 0.75) return '#b9ffd2';  // branco-esverdeado
-    if (ratio > 0.50) return '#4ade80';  // verde vivo
-    if (ratio > 0.25) return '#16a34a';  // verde médio
-    if (ratio > 0.08) return '#14532d';  // verde escuro
-    if (ratio > 0.01) return '#1c2b1e';  // quase preto esverdeado
-    return '#0a120c';                    // preto
-}
+    // ── Optimized zoom via ref (no React re-renders) ──
+    const svgRef = useRef(null);
+    const scaleRef = useRef(1);
+    const panRef = useRef({ x: 0, y: 0 });
+    const isDraggingRef = useRef(false);
+    const dragStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+    const wasDragRef = useRef(false);
 
-function getHeritageColor(captureRate) {
-    if (captureRate > 0.70) return '#22c87a';
-    if (captureRate > 0.50) return '#f0c040';
-    if (captureRate > 0.20) return '#f0a500';
-    return '#3a8ef0';
-}
+    const activeFav = favorites[activeFavoriteIndex];
+    const isComparing = compareCandidates.length > 0;
 
-export default function MapView() {
-    const [geoData, setGeoData] = useState(null);
-    const geoJsonRef = useRef(null);
-    const mode = useStore(state => state.mode);
-    const candidateIndex = useStore(state => state.candidateIndex);
-    const refCandidateIndex = useStore(state => state.refCandidateIndex);
-    const selectedMunicipality = useStore(state => state.selectedMunicipality);
-    const selectMunicipality = useStore(state => state.selectMunicipality);
-    const closeSidebar = useStore(state => state.closeSidebar);
-    const municipalData = useStore(state => state.municipalData);
-    const candidates = useStore(state => state.candidates);
+    // ── Build compare municipal lookup ────────────────
+    const compareMuniData = useMemo(() => {
+        const lookup = {};
+        compareCandidates.forEach(comp => {
+            const cData = compareData[comp.numero];
+            if (cData?.por_municipio) {
+                cData.por_municipio.forEach(m => {
+                    const mName = m.NM_MUNICIPIO
+                        .split(' ')
+                        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                        .join(' ');
+                    if (!lookup[mName]) lookup[mName] = {};
+                    lookup[mName][comp.numero] = m.total_votos;
+                });
+            }
+        });
+        return lookup;
+    }, [compareCandidates, compareData]);
 
-    const safeCandidateIndex = candidateIndex !== null
-        ? Math.min(candidateIndex, Object.values(municipalData)[0]?.votes.length - 1 || 0)
-        : null;
+    // ── State-level data aggregation ──────────────────
+    const ufVotes = useMemo(() => {
+        const map = {};
+        Object.entries(municipalData).forEach(([, mData]) => {
+            const votes = mData.votes?.[activeFavoriteIndex] || 0;
+            if (!map['BA']) map['BA'] = 0;
+            map['BA'] += votes;
+        });
+        return map;
+    }, [municipalData, activeFavoriteIndex]);
 
-    const safeRefIndex = refCandidateIndex !== null
-        ? Math.min(refCandidateIndex, Object.values(municipalData)[0]?.votes.length - 1 || 0)
-        : null;
+    // ── Municipal color scale (single candidate) ──────
+    const { muniLookup, muniColorScale } = useMemo(() => {
+        const lookup = {};
+        Object.entries(municipalData).forEach(([mName, mData]) => {
+            const v = mData.votes?.[activeFavoriteIndex] || 0;
+            if (v > 0) lookup[mName.toUpperCase()] = v;
+        });
+        const vals = Object.values(lookup).filter(v => v > 0);
+        const maxV = vals.length > 0 ? Math.max(...vals) : 1;
+        const colorScale = scaleLinear()
+            .domain([0, maxV * 0.25, maxV * 0.5, maxV])
+            .range(['#e0f2f1', '#4db6ac', '#00897b', '#004d40']);
+        return { muniLookup: lookup, muniColorScale: colorScale };
+    }, [municipalData, activeFavoriteIndex]);
 
+    // ── State-level color scale ───────────────────────
+    const stateColorScale = useMemo(() => {
+        const vals = Object.values(ufVotes).filter(v => v > 0);
+        const maxV = vals.length > 0 ? Math.max(...vals) : 1;
+        return scaleLinear().domain([0, maxV * 0.5, maxV]).range(['#E6F7F7', '#66CDCC', '#285058']);
+    }, [ufVotes]);
+
+    // ── Get color for a municipality ──────────────────
+    const getMuniColor = useCallback((nomeMuni) => {
+        if (!isComparing) {
+            const v = muniLookup[nomeMuni.toUpperCase()] || 0;
+            return v > 0 ? muniColorScale(v) : '#e8f5f3';
+        }
+        const favVotes = municipalData[nomeMuni]?.votes?.[activeFavoriteIndex] || 0;
+        const compVotes = compareMuniData[nomeMuni] || {};
+        let winner = { votes: favVotes, colorIdx: 0 };
+        compareCandidates.forEach((comp, i) => {
+            const v = compVotes[comp.numero] || 0;
+            if (v > winner.votes) winner = { votes: v, colorIdx: i + 1 };
+        });
+        if (winner.votes === 0) return '#e8f5f3';
+        return CANDIDATE_COLORS[winner.colorIdx] || CANDIDATE_COLORS[0];
+    }, [isComparing, muniLookup, muniColorScale, municipalData, activeFavoriteIndex, compareMuniData, compareCandidates]);
+
+    // ── Fetch municipal boundaries from IBGE ──────────
     useEffect(() => {
-        fetch(GEOJSON_URL)
-            .then(res => res.json())
-            .then(data => setGeoData(data))
-            .catch(err => console.error("Failed to load geojson", err));
+        if (!selectedUf) {
+            setMuniFeatures(null);
+            // Reset zoom
+            scaleRef.current = 1;
+            panRef.current = { x: 0, y: 0 };
+            if (svgRef.current) svgRef.current.style.transform = '';
+            return;
+        }
+        const ibgeCode = UF_IBGE_CODE[selectedUf];
+        if (!ibgeCode) return;
+        setLoadingMuni(true);
+
+        const geoUrl = `${IBGE_MUNI_BASE}/${ibgeCode}?intrarregiao=municipio&formato=application/vnd.geo+json`;
+        const namesUrl = `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${ibgeCode}/municipios`;
+
+        Promise.all([
+            fetch(geoUrl).then(r => r.json()),
+            fetch(namesUrl).then(r => r.json()),
+        ]).then(([geoJson, municipios]) => {
+            const codToName = {};
+            if (Array.isArray(municipios)) municipios.forEach(m => { codToName[String(m.id)] = m.nome; });
+
+            let features = [];
+            if (geoJson?.features) features = geoJson.features;
+            else if (geoJson?.type === 'Feature') features = [geoJson];
+
+            features.forEach(f => {
+                const cod = f.properties?.codarea;
+                if (cod && codToName[String(cod)]) f.properties.nome = codToName[String(cod)];
+            });
+            setMuniFeatures(features);
+            setLoadingMuni(false);
+        }).catch(err => {
+            console.error('Erro ao carregar municípios:', err);
+            setLoadingMuni(false);
+        });
+    }, [selectedUf]);
+
+    // ── D3 path generator for municipalities ──────────
+    const muniPathGen = useMemo(() => {
+        if (!muniFeatures || muniFeatures.length === 0) return null;
+        const fc = { type: 'FeatureCollection', features: muniFeatures };
+        const proj = geoIdentity().reflectY(true).fitSize([700, 600], fc);
+        return geoPath(proj);
+    }, [muniFeatures]);
+
+    // ── Apply transform to SVG (no React re-render) ───
+    const applyTransform = useCallback(() => {
+        if (!svgRef.current) return;
+        const s = scaleRef.current;
+        const p = panRef.current;
+        svgRef.current.style.transform = `scale(${s}) translate(${p.x / s}px, ${p.y / s}px)`;
     }, []);
 
-    const maxVotesCache = useMemo(() => {
-        let maxes = [];
-        Object.values(municipalData).forEach(m => {
-            m.votes.forEach((v, idx) => {
-                maxes[idx] = Math.max(maxes[idx] || 0, v);
-            });
-        });
-        return maxes;
-    }, [municipalData]);
-
-    // Retorna cor e intensidade para o modo compare (vencedor por município)
-    const getCompareColor = (data) => {
-        if (!data || candidates.length === 0) return { color: '#0a1a0f', opacity: 0.3 };
-
-        let maxVotes = 0;
-        let winnerIdx = -1;
-        data.votes.forEach((v, idx) => {
-            if (idx < candidates.length && v > maxVotes) {
-                maxVotes = v;
-                winnerIdx = idx;
-            }
-        });
-
-        if (winnerIdx === -1 || maxVotes === 0) return { color: '#111827', opacity: 0.4 };
-
-        // Margem de vitória → intensidade da cor
-        let secondMax = 0;
-        data.votes.forEach((v, idx) => {
-            if (idx !== winnerIdx && idx < candidates.length && v > secondMax) secondMax = v;
-        });
-        const margin = secondMax > 0 ? (maxVotes - secondMax) / maxVotes : 1;
-        const opacity = 0.45 + margin * 0.55;
-
-        return { color: CANDIDATE_COLORS[winnerIdx % CANDIDATE_COLORS.length], opacity };
-    };
-
-    const getStyle = (feature, isHovered = false) => {
-        const name = feature.properties.name;
-        const isSelected = selectedMunicipality?.name === name;
-
-        let fillColor = '#0a1a0f';
-        let fillOpacity = 0.8;
-        let color = '#1e3450';
-        let weight = 0.5;
-
-        const data = municipalData[name];
-
-        if (!data || safeCandidateIndex === null) {
-            fillColor = '#0a1a0f';
-            fillOpacity = 0.3;
-        } else if (mode === 'compare') {
-            const { color: cColor, opacity } = getCompareColor(data);
-            fillColor = cColor;
-            fillOpacity = opacity;
-        } else {
-            const currentVotes = data.votes[safeCandidateIndex] ?? 0;
-            const refVotes = safeRefIndex !== null ? data.votes[safeRefIndex] ?? 0 : 0;
-
-            if (mode === 'heritage' && safeRefIndex !== null) {
-                fillColor = refVotes > 0 ? getHeritageColor(currentVotes / refVotes) : '#0a1a0f';
-            } else {
-                const ratio = maxVotesCache[safeCandidateIndex] ? currentVotes / maxVotesCache[safeCandidateIndex] : 0;
-                fillColor = getHeatmapColor(ratio);
-            }
+    // ── Tooltip ───────────────────────────────────────
+    const buildTooltipContent = useCallback((label, nomeMuni) => {
+        if (!isComparing) {
+            const v = muniLookup[nomeMuni?.toUpperCase?.()] || 0;
+            return `${label} — ${v.toLocaleString('pt-BR')} votos`;
         }
-
-        if (isHovered || isSelected) {
-            color = '#f0a500';
-            weight = 2.5;
-            fillOpacity = 1;
-        }
-
-        return { fillColor, fillOpacity, color, weight };
-    };
-
-    useEffect(() => {
-        if (geoJsonRef.current) {
-            geoJsonRef.current.eachLayer(layer => {
-                layer.setStyle(getStyle(layer.feature));
-            });
-        }
-    }, [mode, candidateIndex, refCandidateIndex, selectedMunicipality, municipalData, candidates]);
-
-    const getStyleRef = useRef(null);
-    getStyleRef.current = getStyle;
-
-    const selectedMunicipalityRef = useRef(selectedMunicipality);
-    selectedMunicipalityRef.current = selectedMunicipality;
-
-    const onEachFeature = (feature, layer) => {
-        layer.on({
-            mouseover: (e) => {
-                e.target.setStyle(getStyleRef.current(feature, true));
-                e.target.bringToFront();
-            },
-            mouseout: (e) => {
-                e.target.setStyle(getStyleRef.current(feature, false));
-                if (selectedMunicipalityRef.current?.name === feature.properties.name) {
-                    e.target.bringToFront();
-                }
-            },
-            click: (e) => {
-                const title = feature.properties.name;
-                if (selectedMunicipalityRef.current?.name === title) {
-                    closeSidebar();
-                } else {
-                    selectMunicipality(title, feature.properties);
-                }
-            }
+        const favVotes = municipalData[nomeMuni]?.votes?.[activeFavoriteIndex] || 0;
+        const compVotes = compareMuniData[nomeMuni] || {};
+        let parts = [`${activeFav?.name}: ${favVotes.toLocaleString('pt-BR')}`];
+        compareCandidates.forEach(comp => {
+            const v = compVotes[comp.numero] || 0;
+            parts.push(`${comp.nome?.split(' ')[0]}: ${v.toLocaleString('pt-BR')}`);
         });
-    };
+        return `${label}\n${parts.join(' · ')}`;
+    }, [isComparing, muniLookup, municipalData, activeFavoriteIndex, compareMuniData, compareCandidates, activeFav]);
+
+    const handleMouseEnter = useCallback((label, nomeMuni, evt) => {
+        setTooltip({ show: true, content: buildTooltipContent(label, nomeMuni), x: evt.clientX, y: evt.clientY });
+    }, [buildTooltipContent]);
+
+    const handleMouseMove = useCallback((evt) => {
+        setTooltip(prev => prev.show ? { ...prev, x: evt.clientX, y: evt.clientY } : prev);
+    }, []);
+
+    const handleMouseLeave = useCallback(() => {
+        setTooltip({ show: false, content: '', x: 0, y: 0 });
+        setHoveredGeo(null);
+    }, []);
+
+    const handleStateClick = useCallback((geo) => {
+        const uf = geo.properties.sigla || geo.properties.UF || geo.id;
+        selectUf(uf);
+    }, [selectUf]);
+
+    const handleMuniClick = useCallback((name) => {
+        if (!wasDragRef.current) selectMunicipality(name);
+    }, [selectMunicipality]);
+
+    // ── Wheel zoom (ref-based, no React re-render) ────
+    const handleWheel = useCallback((e) => {
+        if (!selectedUf) return;
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.2 : 0.2;
+        scaleRef.current = Math.max(1, Math.min(6, scaleRef.current + delta));
+        applyTransform();
+    }, [selectedUf, applyTransform]);
+
+    // ── Drag handlers (ref-based) ─────────────────────
+    const handleMouseDown = useCallback((e) => {
+        if (!selectedUf || scaleRef.current <= 1) return;
+        isDraggingRef.current = true;
+        wasDragRef.current = false;
+        dragStartRef.current = { x: e.clientX, y: e.clientY, panX: panRef.current.x, panY: panRef.current.y };
+    }, [selectedUf]);
+
+    const handleMouseMoveGlobal = useCallback((e) => {
+        if (!isDraggingRef.current) return;
+        const dx = e.clientX - dragStartRef.current.x;
+        const dy = e.clientY - dragStartRef.current.y;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) wasDragRef.current = true;
+        panRef.current = { x: dragStartRef.current.panX + dx, y: dragStartRef.current.panY + dy };
+        applyTransform();
+    }, [applyTransform]);
+
+    const handleMouseUp = useCallback(() => {
+        isDraggingRef.current = false;
+    }, []);
+
+    const handleBack = useCallback(() => {
+        clearUf();
+        scaleRef.current = 1;
+        panRef.current = { x: 0, y: 0 };
+    }, [clearUf]);
+
+    const hasFavorites = favorites.length > 0;
 
     return (
-        <div className="flex-1 w-full bg-[#08101e] relative pt-14 z-0">
+        <div
+            className="map-wrapper"
+            onWheel={handleWheel}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMoveGlobal}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            style={{ cursor: selectedUf && scaleRef.current > 1 ? (isDraggingRef.current ? 'grabbing' : 'grab') : 'default' }}
+        >
+            {!hasFavorites && (
+                <div className="map-empty-overlay">
+                    <div className="map-empty-content">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--cor-secundaria)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                        </svg>
+                        <h3>Busque um candidato</h3>
+                        <p>Use a barra de busca acima para encontrar e carregar dados eleitorais.</p>
+                    </div>
+                </div>
+            )}
 
-            {/* Legenda do modo compare */}
-            {mode === 'compare' && candidates.length > 0 && (
-                <div className="absolute bottom-6 left-4 z-[999] bg-bg/80 backdrop-blur-md border border-border rounded-lg px-3 py-2 flex flex-col gap-1.5">
-                    <span className="font-mono text-[9px] uppercase tracking-widest text-muted mb-0.5">Candidatos</span>
-                    {candidates.map((cand, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                            <div
-                                className="w-3 h-3 rounded-sm shrink-0"
-                                style={{ backgroundColor: CANDIDATE_COLORS[idx % CANDIDATE_COLORS.length] }}
-                            />
-                            <span className="font-mono text-[11px] text-text">{cand.name}</span>
+            {selectedUf && (
+                <button className="map-back-btn" onClick={handleBack}>← Voltar ao Brasil</button>
+            )}
+
+            {selectedUf && (
+                <div className="map-state-badge">
+                    {UF_NAMES[selectedUf]}
+                    {ufVotes[selectedUf] ? ` — ${ufVotes[selectedUf].toLocaleString('pt-BR')} votos` : ''}
+                </div>
+            )}
+
+            {loadingMuni && <div className="map-loading">Carregando municípios...</div>}
+
+            {selectedUf && muniFeatures && muniPathGen ? (
+                <svg ref={svgRef} viewBox="0 0 700 600" className="map-svg-muni">
+                    <g>
+                        {muniFeatures.map((feature, idx) => {
+                            const nomeMuni = feature.properties?.nome || `Município ${idx + 1}`;
+                            const d = muniPathGen(feature);
+                            if (!d) return null;
+                            const isHovered = hoveredGeo === idx;
+                            const fillColor = getMuniColor(nomeMuni);
+                            return (
+                                <path
+                                    key={`muni-${idx}`}
+                                    d={d}
+                                    fill={isHovered ? '#14b8a6' : fillColor}
+                                    stroke={isHovered ? '#0d9488' : '#94a3b8'}
+                                    strokeWidth={isHovered ? 2 : 0.5}
+                                    style={{ cursor: 'pointer', transition: 'fill 0.1s' }}
+                                    onMouseEnter={(evt) => { setHoveredGeo(idx); handleMouseEnter(nomeMuni, nomeMuni, evt); }}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseLeave={handleMouseLeave}
+                                    onClick={() => handleMuniClick(nomeMuni)}
+                                />
+                            );
+                        })}
+                    </g>
+                </svg>
+            ) : (
+                <ComposableMap
+                    projection="geoMercator"
+                    projectionConfig={{ scale: 650, center: [-54, -15] }}
+                    width={500} height={480}
+                    className="map-composable"
+                >
+                    <Geographies geography={TOPO_URL}>
+                        {({ geographies }) =>
+                            geographies.map(geo => {
+                                const uf = geo.properties.sigla || geo.properties.UF || geo.id;
+                                const valor = ufVotes[uf] || 0;
+                                const isHovered = hoveredGeo === uf;
+                                return (
+                                    <Geography
+                                        key={geo.rsmKey}
+                                        geography={geo}
+                                        fill={isHovered ? '#14b8a6' : (valor > 0 ? stateColorScale(valor) : '#E6F7F7')}
+                                        stroke={isHovered ? '#0d9488' : '#cbd5e1'}
+                                        strokeWidth={isHovered ? 1.5 : 0.6}
+                                        style={{ default: { outline: 'none' }, hover: { outline: 'none', cursor: 'pointer' }, pressed: { outline: 'none' } }}
+                                        onMouseEnter={(evt) => {
+                                            setHoveredGeo(uf);
+                                            setTooltip({ show: true, content: `${UF_NAMES[uf] || uf} — ${valor.toLocaleString('pt-BR')} votos`, x: evt.clientX, y: evt.clientY });
+                                        }}
+                                        onMouseMove={handleMouseMove}
+                                        onMouseLeave={handleMouseLeave}
+                                        onClick={() => handleStateClick(geo)}
+                                    />
+                                );
+                            })
+                        }
+                    </Geographies>
+                </ComposableMap>
+            )}
+
+            {/* Comparison legend */}
+            {isComparing && hasFavorites && (
+                <div className="map-compare-legend">
+                    <div className="map-compare-legend-item">
+                        <span className="map-compare-dot" style={{ background: CANDIDATE_COLORS[0] }} />
+                        <span>{activeFav?.name}</span>
+                    </div>
+                    {compareCandidates.map((comp, i) => (
+                        <div key={comp.numero} className="map-compare-legend-item">
+                            <span className="map-compare-dot" style={{ background: CANDIDATE_COLORS[i + 1] }} />
+                            <span>{comp.nome?.split(' ')[0]}</span>
                         </div>
                     ))}
                 </div>
             )}
-            <MapContainer
-                center={[-12.5, -41.7]}
-                zoom={7}
-                zoomControl={false}
-                className="h-full w-full bg-[#08101e]"
-            >
-                <TileLayer
-                    url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-                    opacity={0.25}
-                />
-                {geoData && (
-                    <GeoJSON
-                        ref={geoJsonRef}
-                        data={geoData}
-                        style={(feature) => getStyle(feature, false)}
-                        onEachFeature={onEachFeature}
-                    />
-                )}
-            </MapContainer>
+
+            {!isComparing && hasFavorites && (
+                <div className="map-legend">
+                    <span>Menos</span>
+                    <div className="map-legend-bar" style={{
+                        background: selectedUf && muniFeatures
+                            ? 'linear-gradient(to right, #e0f2f1, #4db6ac, #004d40)'
+                            : 'linear-gradient(to right, #E6F7F7, #66CDCC, #285058)',
+                    }} />
+                    <span>Mais</span>
+                </div>
+            )}
+
+            {/* Ver tudo button */}
+            {hasFavorites && (
+                <button className="map-vertudo-btn" onClick={openExport}>
+                    {isComparing ? '📊 Ver tudo' : '📊 Ver tudo'}
+                </button>
+            )}
+
+            {tooltip.show && (
+                <div className="map-tooltip" style={{ top: tooltip.y - 44, left: tooltip.x + 14 }}>
+                    {tooltip.content.split('\n').map((line, i) => (<div key={i}>{line}</div>))}
+                </div>
+            )}
         </div>
     );
 }
-// export default function MapView() {
-//     const [geoData, setGeoData] = useState(null);
-//     const geoJsonRef = useRef(null);
-//     const mode = useStore(state => state.mode);
-//     const candidateIndex = useStore(state => state.candidateIndex);
-//     const refCandidateIndex = useStore(state => state.refCandidateIndex);
-//     const selectedMunicipality = useStore(state => state.selectedMunicipality);
-//     const selectMunicipality = useStore(state => state.selectMunicipality);
-//     const closeSidebar = useStore(state => state.closeSidebar);
-//     const municipalData = useStore(state => state.municipalData);
-//     const safeCandidateIndex = candidateIndex !== null
-//         ? Math.min(candidateIndex, Object.values(municipalData)[0]?.votes.length - 1 || 0)
-//         : null;
 
-//     const safeRefIndex = refCandidateIndex !== null
-//         ? Math.min(refCandidateIndex, Object.values(municipalData)[0]?.votes.length - 1 || 0)
-//         : null;
-
-//     useEffect(() => {
-//         fetch(GEOJSON_URL)
-//             .then(res => res.json())
-//             .then(data => setGeoData(data))
-//             .catch(err => console.error("Failed to load geojson", err));
-//     }, []);
-//     // Pre-calculate max votes for heatmap scaling
-//     const maxVotesCache = useMemo(() => {
-//         let maxes = [];
-//         Object.values(municipalData).forEach(m => {
-//             m.votes.forEach((v, idx) => {
-//                 maxes[idx] = Math.max(maxes[idx] || 0, v);
-//             });
-//         });
-//         return maxes;
-//     }, [municipalData]);
-
-//     // Function to determine style for a feature
-//     const getStyle = (feature, isHovered = false) => {
-//         const name = feature.properties.name;
-//         const isSelected = selectedMunicipality?.name === name;
-
-//         let fillColor = '#0d1e30';
-//         let fillOpacity = 0.8;
-//         let color = '#1e3450';
-//         let weight = 0.5;
-
-//         const data = municipalData[name];
-
-//         if (!data || safeCandidateIndex === null) {
-//             fillColor = '#0d1e30';
-//             fillOpacity = 0.3;
-//         } else {
-//             const currentVotes = data.votes[safeCandidateIndex] ?? 0;
-//             const refVotes = safeRefIndex !== null ? data.votes[safeRefIndex] ?? 0 : 0;
-
-//             if (mode === 'heritage' && safeRefIndex !== null) {
-//                 fillColor = refVotes > 0 ? getHeritageColor(currentVotes / refVotes) : '#0d1e30';
-//             } else {
-//                 const ratio = maxVotesCache[safeCandidateIndex] ? currentVotes / maxVotesCache[safeCandidateIndex] : 0;
-//                 fillColor = getHeatmapColor(ratio);
-//             }
-//         }
-
-//         if (isHovered || isSelected) {
-//             color = '#f0a500';
-//             weight = 2.5;
-//             fillOpacity = 1;
-//         }
-
-//         return { fillColor, fillOpacity, color, weight };
-//     };
-
-//     // Restyle all layer when context changes securely via Leaflet ref
-//     useEffect(() => {
-//         if (geoJsonRef.current) {
-//             geoJsonRef.current.eachLayer(layer => {
-//                 layer.setStyle(getStyle(layer.feature));
-//             });
-//         }
-//     }, [mode, candidateIndex, refCandidateIndex, selectedMunicipality, municipalData]);
- 
-//     const getStyleRef = useRef(null);
-//     getStyleRef.current = getStyle;
-
-//     const selectedMunicipalityRef = useRef(selectedMunicipality); // ✅ adicionar
-//     selectedMunicipalityRef.current = selectedMunicipality;        // ✅ atualiza a cada render
-
-//     const onEachFeature = (feature, layer) => {
-//         layer.on({
-//             mouseover: (e) => {
-//                 e.target.setStyle(getStyleRef.current(feature, true));
-//                 e.target.bringToFront();
-//             },
-//             mouseout: (e) => {
-//                 e.target.setStyle(getStyleRef.current(feature, false));
-//                 if (selectedMunicipalityRef.current?.name === feature.properties.name) { // ✅
-//                     e.target.bringToFront();
-//                 }
-//             },
-//             click: (e) => {
-//                 const title = feature.properties.name;
-//                 if (selectedMunicipalityRef.current?.name === title) { // ✅
-//                     closeSidebar();
-//                 } else {
-//                     selectMunicipality(title, feature.properties);
-//                 }
-//             }
-//         });
-//     };
-//     return (
-//         <div className="flex-1 w-full bg-[#08101e] relative pt-14 z-0">
-//             <MapContainer
-//                 center={[-12.5, -41.7]}
-//                 zoom={7}
-//                 zoomControl={false}
-//                 className="h-full w-full bg-[#08101e]"
-//             >
-//                 <TileLayer
-//                     url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
-//                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-//                     opacity={0.25}
-//                 />
-//                 {geoData && (
-//                     <GeoJSON
-//                         ref={geoJsonRef}
-//                         data={geoData}
-//                         style={(feature) => getStyle(feature, false)}
-//                         onEachFeature={onEachFeature}
-//                     />
-//                 )}
-//             </MapContainer>
-//         </div>
-//     );
-// }
+export default memo(MapView);

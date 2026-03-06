@@ -1,0 +1,33 @@
+.stat-card {
+    background: var(--bg-page);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-card.accent {
+    background: var(--bg-card-alt);
+    border: 1px solid var(--accent);
+}
+
+.stat-card-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--texto-muted);
+    font-weight: 500;
+}
+
+.stat-card-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--texto-cor);
+    line-height: 1;
+}
+
+.stat-card-sub {
+    font-size: 11px;
+    color: var(--texto-muted);
+}
